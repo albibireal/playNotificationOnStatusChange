@@ -5,78 +5,63 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import definePlugin, { OptionType } from "@utils/types";
+import definePlugin, { makeRange, OptionType } from "@utils/types";
 
-import notisSound from "./notificationSound.mp3";
 
 
 
 const settings = definePluginSettings({
     userID: {
-        id: "userId",
-        name: "User ID",
         description: "Enter the Discord user ID to monitor",
         type: OptionType.STRING,
     },
+    volume: {
+        description: "The percentage volume of the notification",
+        type: OptionType.SLIDER,
+        markers: makeRange(0, 100, 5),
+        default: 100,
+    },
     desktop: {
-        id: "desktop",
-        name: "Desktop",
         description: "Check for desktop status change",
         type: OptionType.BOOLEAN,
         default: true
     },
     web: {
-        id: "web",
-        name: "Web",
         description: "Check for web status change",
         type: OptionType.BOOLEAN,
         default: true
     },
     mobile: {
-        id: "mobile",
-        name: "Mobile",
         description: "Check for mobile status change",
         type: OptionType.BOOLEAN,
         default: true
     },
     console: {
-        id: "console",
-        name: "Console",
         description: "Check for console status change",
         type: OptionType.BOOLEAN,
         default: true
     },
     getsOnline: {
-        id: "getsOnline",
-        name: "GetsOnline",
-        description: "TriggerWhen user goes online only. Disables all other triggers.",
+        description: "Trigger when user goes from offline to anything else.",
         type: OptionType.BOOLEAN,
         default: true
     },
     online: {
-        id: "online",
-        name: "Online",
         description: "Trigger on online status",
         type: OptionType.BOOLEAN,
         default: false
     },
     offline: {
-        id: "offline",
-        name: "Offline",
         description: "Trigger on offline status",
         type: OptionType.BOOLEAN,
         default: false
     },
     dnd: {
-        id: "dnd",
-        name: "DoNotDisturb",
         description: "Trigger on do not disturb status",
         type: OptionType.BOOLEAN,
         default: false
     },
     idle: {
-        id: "idle",
-        name: "Idle",
         description: "Trigger on idle status",
         type: OptionType.BOOLEAN,
         default: false
@@ -109,8 +94,9 @@ interface PresenceUpdate {
 }
 
 var lastUserData;
-var notificationSound = new Audio(notisSound);
-// new Audio("https://canary.discord.com/assets/0950a7ea4f1dd037870b.mp3");
+
+// Only way i could figure out how to set a sound without either esbuild or vencord screaming at me
+const notificationSound = new Audio("https://canary.discord.com/assets/badc42c2a9063b4a962c.mp3");
 
 function CheckUser(userData) {
     if (userData.user.id !== settings.store.userID) return;
@@ -128,7 +114,7 @@ function CheckUser(userData) {
     else if (userData.status === "offline") newStatus = userData.status;
     if (newStatus === "none") return;
 
-    if (settings.store.getsOnline && lastUserData.status === "offline") { }
+    if (settings.store.getsOnline && lastUserData.status === "offline" && lastUserData.status !== newStatus) { }
     else if (settings.store.online && newStatus === "online") { }
     else if (settings.store.offline && newStatus === "offline") { }
     else if (settings.store.dnd && newStatus === "dnd") { }
@@ -139,6 +125,7 @@ function CheckUser(userData) {
     }
 
     // Play sound
+    notificationSound.volume = settings.store.volume / 100;
     notificationSound.play();
 
 
@@ -150,6 +137,10 @@ export default definePlugin({
     description: "Plays a sound when selected players go online",
     authors: [{ name: "albibi", id: 316320262658457601n }],
     settings,
+
+    start() {
+        lastUserData.status = "offline";
+    },
 
     flux: {
         PRESENCE_UPDATES({ updates }: { updates: PresenceUpdate[]; }) {
