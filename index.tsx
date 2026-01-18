@@ -9,11 +9,11 @@ import definePlugin, { makeRange, OptionType } from "@utils/types";
 
 
 
-
 const settings = definePluginSettings({
     userID: {
         description: "Enter the Discord user ID to monitor",
         type: OptionType.STRING,
+        default: "",
     },
     volume: {
         description: "The percentage volume of the notification",
@@ -42,7 +42,7 @@ const settings = definePluginSettings({
         default: true
     },
     getsOnline: {
-        description: "Trigger when user goes from offline to anything else.",
+        description: "Trigger when user goes from offline to anything else. Other triggers won't work with this enabled.",
         type: OptionType.BOOLEAN,
         default: true
     },
@@ -101,11 +101,6 @@ const notificationSound = new Audio("https://canary.discord.com/assets/badc42c2a
 function CheckUser(userData) {
     if (userData.user.id !== settings.store.userID) return;
 
-    if (!lastUserData) {
-        lastUserData = userData;
-        return;
-    }
-
     var newStatus = "none";
     if (settings.store.desktop && userData.clientStatus.desktop) newStatus = userData.clientStatus.deskktop;
     else if (settings.store.mobile && userData.clientStatus.mobile) newStatus = userData.clientStatus.mobile;
@@ -114,7 +109,22 @@ function CheckUser(userData) {
     else if (userData.status === "offline") newStatus = userData.status;
     if (newStatus === "none") return;
 
-    if (settings.store.getsOnline && lastUserData.status === "offline" && lastUserData.status !== newStatus) { }
+    if (settings.store.getsOnline && newStatus !== "offline") {
+        console.log("hi");
+        if (lastUserData.status === "offline") { }
+        else if (lastUserData.clientStatus.desktop === undefined && userData.clientStatus.desktop) { }
+        else if (lastUserData.clientStatus.mobile === undefined && userData.clientStatus.mobile) { }
+        else if (lastUserData.clientStatus.web === undefined && userData.clientStatus.web) { }
+        else if (lastUserData.clientStatus.console === undefined && userData.clientStatus.console) { }
+        else {
+            console.log(lastUserData.clientStatus.mobile);
+            console.log(userData.clientStatus.mobile);
+
+            lastUserData = userData;
+            console.log("bye");
+            return;
+        }
+    }
     else if (settings.store.online && newStatus === "online") { }
     else if (settings.store.offline && newStatus === "offline") { }
     else if (settings.store.dnd && newStatus === "dnd") { }
@@ -140,6 +150,10 @@ export default definePlugin({
 
     start() {
         lastUserData.status = "offline";
+        lastUserData.clientStatus.desktop = undefined;
+        lastUserData.clientStatus.mobile = undefined;
+        lastUserData.clientStatus.web = undefined;
+        lastUserData.clientStatus.console = undefined;
     },
 
     flux: {
