@@ -93,7 +93,19 @@ interface PresenceUpdate {
     }>;
 }
 
-var lastUserData;
+let lastUserData: PresenceUpdate = {
+    user: {
+        id: "",
+    },
+    status: "offline",
+    clientStatus: {
+        desktop: undefined,
+        mobile: undefined,
+        web: undefined,
+        console: undefined,
+    },
+    activities: [],
+};
 
 // Only way i could figure out how to set a sound without either esbuild or vencord screaming at me
 const notificationSound = new Audio("https://canary.discord.com/assets/badc42c2a9063b4a962c.mp3");
@@ -110,7 +122,6 @@ function CheckUser(userData) {
     if (newStatus === "none") return;
 
     if (settings.store.getsOnline && newStatus !== "offline") {
-        console.log("hi");
         if (lastUserData.status === "offline") { }
         else if (lastUserData.clientStatus.desktop === undefined && userData.clientStatus.desktop) { }
         else if (lastUserData.clientStatus.mobile === undefined && userData.clientStatus.mobile) { }
@@ -121,7 +132,6 @@ function CheckUser(userData) {
             console.log(userData.clientStatus.mobile);
 
             lastUserData = userData;
-            console.log("bye");
             return;
         }
     }
